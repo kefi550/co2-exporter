@@ -18,8 +18,8 @@ type prometheusExporter struct {
 func NewPrometheusExporter(sensorPortName string) *prometheusExporter {
 	return &prometheusExporter{
 		co2: prometheus.NewDesc(
-			"co2",
-			"co2 help",
+			"co2_ppm",
+			"co2 concentration ppm",
 			nil, nil,
 		),
 		sensorPortName: sensorPortName,
