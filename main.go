@@ -4,22 +4,25 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/alecthomas/kingpin"
 	mhz16 "github.com/kefi550/mh-z16-go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type prometheusExporter struct {
-	co2 *prometheus.Desc
+	co2            *prometheus.Desc
+	sensorPortName string
 }
 
-func NewPrometheusExporter() *prometheusExporter {
+func NewPrometheusExporter(sensorPortName string) *prometheusExporter {
 	return &prometheusExporter{
 		co2: prometheus.NewDesc(
 			"co2",
 			"co2 help",
 			nil, nil,
 		),
+		sensorPortName: sensorPortName,
 	}
 }
 
@@ -28,7 +31,7 @@ func (pe *prometheusExporter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (pe *prometheusExporter) Collect(ch chan<- prometheus.Metric) {
-	value, err := getCo2Command("/dev/ttyAMA0")
+	value, err := getCo2Command(pe.sensorPortName)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -53,9 +56,13 @@ func getCo2Command(sensorPortName string) (float64, error) {
 }
 
 func main() {
+	portName := kingpin.Arg("port", "portName").Required().ExistingFile()
+
+	kingpin.Parse()
+
 	registry := prometheus.NewRegistry()
 
-	exporter := NewPrometheusExporter()
+	exporter := NewPrometheusExporter(*portName)
 	registry.MustRegister(exporter)
 
 	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
